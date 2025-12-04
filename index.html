@@ -81,38 +81,47 @@
         sceneEl.systems["mindar-image-system"].start();
         startBtn.style.display = "none";
         
-        // Calentamiento: Play y Pause rápido
+        // Calentamiento inicial
         arTargets.forEach(target => {
-          // Video
           const videoId = target.getAttribute('data-video-id');
-          const videoEl = document.querySelector('#' + videoId);
-          if(videoEl) {
-            videoEl.play();
-            videoEl.pause();
-            videoEl.currentTime = 0;
-          }
-
-          // Audio
           const audioId = target.getAttribute('data-audio-id');
+          const videoEl = document.querySelector('#' + videoId);
           const audioEl = document.querySelector('#' + audioId);
-          if(audioEl) {
-            audioEl.play();
-            audioEl.pause();
-            audioEl.currentTime = 0;
-          }
+          
+          if(videoEl) { videoEl.play(); videoEl.pause(); }
+          if(audioEl) { audioEl.play(); audioEl.pause(); }
         });
       });
 
       arTargets.forEach(target => {
         const videoId = target.getAttribute('data-video-id');
         const audioId = target.getAttribute('data-audio-id');
-        
         const videoEl = document.querySelector('#' + videoId);
         const audioEl = document.querySelector('#' + audioId);
 
         target.addEventListener("targetFound", () => {
-          if (videoEl) videoEl.play();
-          if (audioEl) audioEl.play();
+          // 1. VIDEO: Se reproduce TOTAL (desde el principio)
+          if (videoEl) {
+            videoEl.currentTime = 0; // Forzamos que arranque desde el inicio
+            videoEl.play();
+          }
+          
+          // 2. AUDIO: Se reproduce RANDOM (desde seg 3 en adelante)
+          if (audioEl) {
+             const duracionAudio = audioEl.duration;
+             
+             // Solo calculamos random si el audio dura más de 3 segundos
+             if (duracionAudio > 3) {
+                 // Formula: Numero aleatorio entre 3 y el final
+                 const tiempoRandom = Math.random() * (duracionAudio - 3) + 3;
+                 audioEl.currentTime = tiempoRandom;
+                 console.log(`Audio random desde: ${tiempoRandom.toFixed(2)}`);
+             } else {
+                 audioEl.currentTime = 0;
+             }
+             
+             audioEl.play();
+          }
         });
 
         target.addEventListener("targetLost", () => {
