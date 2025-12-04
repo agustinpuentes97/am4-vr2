@@ -6,7 +6,6 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* Estilos del botón de inicio */
       #start-button {
         position: fixed;
         bottom: 20px;
@@ -22,7 +21,7 @@
         box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
         z-index: 1000;
         cursor: pointer;
-        display: none; /* Se oculta hasta que carga la escena */
+        display: none;
       }
       #start-button:active {
         background: #555;
@@ -69,54 +68,48 @@
     </a-scene>
 
     <script>
-      // Referencias a los elementos
       const sceneEl = document.querySelector('a-scene');
       const startBtn = document.querySelector('#start-button');
       const arTargets = document.querySelectorAll('.ar-target');
 
-      // 1. Mostrar botón cuando todo haya cargado
       sceneEl.addEventListener("loaded", () => {
-        console.log("Escena cargada, mostrando botón...");
         startBtn.style.display = "block";
       });
 
-      // 2. Al hacer click en iniciar
       startBtn.addEventListener("click", () => {
-        // Iniciar el motor de AR
         sceneEl.systems["mindar-image-system"].start();
         startBtn.style.display = "none";
         
-        // "Calentar" todos los videos: les damos play y pause inmediatamente.
-        // Esto le dice al navegador "el usuario interactuó, permite reproducir video después".
+        // Loop de configuración inicial
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const videoEl = document.querySelector('#' + videoId);
           if(videoEl) {
+            // === AQUÍ ESTÁ EL CAMBIO DE VELOCIDAD ===
+            videoEl.playbackRate = 0.25; 
+            videoEl.defaultPlaybackRate = 0.25; 
+            // ========================================
+            
             videoEl.play();
             videoEl.pause();
-            videoEl.currentTime = 0; // Reiniciar al principio
+            videoEl.currentTime = 0;
           }
         });
       });
 
-      // 3. Asignar lógica a cada target (Encontrado / Perdido)
       arTargets.forEach(target => {
         const videoId = target.getAttribute('data-video-id');
         const videoEl = document.querySelector('#' + videoId);
 
         if (videoEl) {
-          // Cuando se detecta la imagen
           target.addEventListener("targetFound", () => {
-            console.log(`Target encontrado: ${videoId}`);
+            // Reforzamos la velocidad al encontrar el target por seguridad
+            videoEl.playbackRate = 0.25; 
             videoEl.play();
           });
 
-          // Cuando se pierde la imagen
           target.addEventListener("targetLost", () => {
-            console.log(`Target perdido: ${videoId}`);
             videoEl.pause();
-            // Opcional: Si quieres que al volver a enfocar empiece desde el inicio, descomenta la siguiente línea:
-            // videoEl.currentTime = 0;
           });
         }
       });
