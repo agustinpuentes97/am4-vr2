@@ -1,110 +1,125 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        #start-button {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            z-index: 1000;
-            display: none;
-        }
+      /* Estilos del botón de inicio */
+      #start-button {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: #333;
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-family: sans-serif;
+        font-weight: bold;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        z-index: 1000;
+        cursor: pointer;
+        display: none; /* Se oculta hasta que carga la escena */
+      }
+      #start-button:active {
+        background: #555;
+        transform: translateX(-50%) scale(0.98);
+      }
     </style>
-</head>
-
-<body>
-
+  </head>
+  <body>
+    
     <button id="start-button">Iniciar Experiencia AR</button>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 4" color-space="sRGB"
-        renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false">
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 4" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
 
-        <a-assets>
-            <video id="vid0" src="./video0.mp4" preload="auto" loop="true" playsinline webkit-playsinline
-                crossorigin="anonymous"></video>
-            <video id="vid1" src="./video1.mp4" preload="auto" loop="true" playsinline webkit-playsinline
-                crossorigin="anonymous"></video>
-            <video id="vid2" src="./video2.mp4" preload="auto" loop="true" playsinline webkit-playsinline
-                crossorigin="anonymous"></video>
-            <video id="vid3" src="./video3.mp4" preload="auto" loop="true" playsinline webkit-playsinline
-                crossorigin="anonymous"></video>
-        </a-assets>
+      <a-assets>
+        <video id="vid0" src="./video0.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+        <video id="vid1" src="./video1.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+        <video id="vid2" src="./video2.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+        <video id="vid3" src="./video3.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+      </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0">
-            <a-video src="#vid0" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0">
+        <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+      </a-entity>
 
-        <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1">
-            <a-video src="#vid1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1">
+        <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+      </a-entity>
 
-        <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2">
-            <a-video src="#vid2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
+      <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2">
+        <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+      </a-entity>
 
-        <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3">
-            <a-video src="#vid3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
+      <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3">
+        <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+      </a-entity>
 
     </a-scene>
 
     <script>
-        const sceneEl = document.querySelector('a-scene');
-        const startBtn = document.querySelector('#start-button');
+      // Referencias a los elementos
+      const sceneEl = document.querySelector('a-scene');
+      const startBtn = document.querySelector('#start-button');
+      const arTargets = document.querySelectorAll('.ar-target');
 
-        // Seleccionamos todas las entidades que tienen la clase "ar-target"
-        const arTargets = document.querySelectorAll('.ar-target');
+      // 1. Mostrar botón cuando todo haya cargado
+      sceneEl.addEventListener("loaded", () => {
+        console.log("Escena cargada, mostrando botón...");
+        startBtn.style.display = "block";
+      });
 
-        sceneEl.addEventListener("loaded", () => {
-            startBtn.style.display = "block";
-        });
-
-        startBtn.addEventListener("click", () => {
-            sceneEl.systems["mindar-image-system"].start();
-            startBtn.style.display = "none";
-
-            // "Calentar" todos los videos (play y pause rápido) para desbloquear audio en iOS
-            arTargets.forEach(target => {
-                const videoId = target.getAttribute('data-video-id');
-                const videoEl = document.querySelector('#' + videoId);
-                videoEl.play();
-                videoEl.pause();
-            });
-        });
-
-        // Bucle para añadir lógica a cada target individualmente
+      // 2. Al hacer click en iniciar
+      startBtn.addEventListener("click", () => {
+        // Iniciar el motor de AR
+        sceneEl.systems["mindar-image-system"].start();
+        startBtn.style.display = "none";
+        
+        // "Calentar" todos los videos: les damos play y pause inmediatamente.
+        // Esto le dice al navegador "el usuario interactuó, permite reproducir video después".
         arTargets.forEach(target => {
-            // Obtenemos el ID del video asociado a este target
-            const videoId = target.getAttribute('data-video-id');
-            const videoEl = document.querySelector('#' + videoId);
-
-            // Cuando encuentra SU imagen
-            target.addEventListener("targetFound", () => {
-                console.log("Encontrado target con video:", videoId);
-                videoEl.play();
-            });
-
-            // Cuando pierde SU imagen
-            target.addEventListener("targetLost", () => {
-                console.log("Perdido target con video:", videoId);
-                videoEl.pause();
-            });
+          const videoId = target.getAttribute('data-video-id');
+          const videoEl = document.querySelector('#' + videoId);
+          if(videoEl) {
+            videoEl.play();
+            videoEl.pause();
+            videoEl.currentTime = 0; // Reiniciar al principio
+          }
         });
-    </script>
-</body>
+      });
 
+      // 3. Asignar lógica a cada target (Encontrado / Perdido)
+      arTargets.forEach(target => {
+        const videoId = target.getAttribute('data-video-id');
+        const videoEl = document.querySelector('#' + videoId);
+
+        if (videoEl) {
+          // Cuando se detecta la imagen
+          target.addEventListener("targetFound", () => {
+            console.log(`Target encontrado: ${videoId}`);
+            videoEl.play();
+          });
+
+          // Cuando se pierde la imagen
+          target.addEventListener("targetLost", () => {
+            console.log(`Target perdido: ${videoId}`);
+            videoEl.pause();
+            // Opcional: Si quieres que al volver a enfocar empiece desde el inicio, descomenta la siguiente línea:
+            // videoEl.currentTime = 0;
+          });
+        }
+      });
+    </script>
+  </body>
 </html>
