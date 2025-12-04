@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        #start-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button id="start-button">Iniciar Experiencia AR</button>
+
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 4" color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-assets>
+            <video id="vid0" src="./video0.mp4" preload="auto" loop="true" playsinline webkit-playsinline
+                crossorigin="anonymous"></video>
+            <video id="vid1" src="./video1.mp4" preload="auto" loop="true" playsinline webkit-playsinline
+                crossorigin="anonymous"></video>
+            <video id="vid2" src="./video2.mp4" preload="auto" loop="true" playsinline webkit-playsinline
+                crossorigin="anonymous"></video>
+            <video id="vid3" src="./video3.mp4" preload="auto" loop="true" playsinline webkit-playsinline
+                crossorigin="anonymous"></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0">
+            <a-video src="#vid0" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1">
+            <a-video src="#vid1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2">
+            <a-video src="#vid2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3">
+            <a-video src="#vid3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-video>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        const sceneEl = document.querySelector('a-scene');
+        const startBtn = document.querySelector('#start-button');
+
+        // Seleccionamos todas las entidades que tienen la clase "ar-target"
+        const arTargets = document.querySelectorAll('.ar-target');
+
+        sceneEl.addEventListener("loaded", () => {
+            startBtn.style.display = "block";
+        });
+
+        startBtn.addEventListener("click", () => {
+            sceneEl.systems["mindar-image-system"].start();
+            startBtn.style.display = "none";
+
+            // "Calentar" todos los videos (play y pause rápido) para desbloquear audio en iOS
+            arTargets.forEach(target => {
+                const videoId = target.getAttribute('data-video-id');
+                const videoEl = document.querySelector('#' + videoId);
+                videoEl.play();
+                videoEl.pause();
+            });
+        });
+
+        // Bucle para añadir lógica a cada target individualmente
+        arTargets.forEach(target => {
+            // Obtenemos el ID del video asociado a este target
+            const videoId = target.getAttribute('data-video-id');
+            const videoEl = document.querySelector('#' + videoId);
+
+            // Cuando encuentra SU imagen
+            target.addEventListener("targetFound", () => {
+                console.log("Encontrado target con video:", videoId);
+                videoEl.play();
+            });
+
+            // Cuando pierde SU imagen
+            target.addEventListener("targetLost", () => {
+                console.log("Perdido target con video:", videoId);
+                videoEl.pause();
+            });
+        });
+    </script>
+</body>
+
+</html>
