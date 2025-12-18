@@ -6,17 +6,15 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* --- NUEVOS ESTILOS --- */
-
-      /* 1. Contenedor de instrucciones (Capa oscura inicial) */
+      /* --- ESTILOS VISUALES --- */
       #overlay-container {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.85); /* Fondo negro semi-transparente */
-        z-index: 9999; /* Asegura que esté por encima de todo */
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 9999;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -24,35 +22,33 @@
         color: white;
         text-align: center;
         font-family: sans-serif;
-        /* Se mantiene oculto hasta que carga la escena */
         visibility: hidden; 
         opacity: 0;
         transition: opacity 0.5s ease;
       }
 
-      /* Estilo del texto de instrucciones */
       .instructions-text {
         font-size: 1.2rem;
         margin-bottom: 20px;
         line-height: 1.5;
+        padding: 0 20px;
       }
       .highlight {
-        color: #FFD700; /* Color amarillo para resaltar palabras clave */
+        color: #FFD700;
         font-weight: bold;
       }
 
-      /* 2. Nuevo estilo del Botón (Amarillo y Bold) */
       #start-button {
         padding: 15px 30px;
-        background: #FFD700; /* Amarillo llamativo */
-        color: black;       /* Letra negra */
+        background: #FFD700;
+        color: black;
         border: none;
         border-radius: 30px;
         font-family: sans-serif;
-        font-weight: 900;   /* Bold extra fuerte */
+        font-weight: 900;
         font-size: 1.1rem;
         text-transform: uppercase;
-        box-shadow: 0px 4px 15px rgba(255, 215, 0, 0.5); /* Sombra amarilla */
+        box-shadow: 0px 4px 15px rgba(255, 215, 0, 0.5);
         cursor: pointer;
         transition: transform 0.1s;
       }
@@ -65,12 +61,11 @@
     
     <div id="overlay-container">
       <div class="instructions-text">
-        <p>🔊 <span class="highlight">SUBÍ EL VOLUMEN</span> para disfrutar la experiencia.</p>
-        <p>👇 Apretá el botón para comenzar.</p>
+        <p>🔊 <span class="highlight">SUBÍ EL VOLUMEN</span> al máximo.</p>
+        <p>Las imágenes activan sonidos que se suman entre sí.</p>
       </div>
       <button id="start-button">Iniciar Experiencia AR</button>
     </div>
-
 
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 4" 
@@ -110,62 +105,94 @@
 
     <script>
       const sceneEl = document.querySelector('a-scene');
-      // Referencia al nuevo contenedor principal
       const overlayContainer = document.querySelector('#overlay-container');
       const startBtn = document.querySelector('#start-button');
       const arTargets = document.querySelectorAll('.ar-target');
 
+      // Mostrar instrucciones al cargar
       sceneEl.addEventListener("loaded", () => {
-        // Cuando carga la escena, hacemos visible el contenedor de instrucciones
         overlayContainer.style.visibility = "visible";
         overlayContainer.style.opacity = "1";
       });
 
+      // Botón de inicio
       startBtn.addEventListener("click", () => {
         sceneEl.systems["mindar-image-system"].start();
-        
-        // Al hacer click, ocultamos TODO el contenedor de instrucciones
         overlayContainer.style.display = "none";
         
-        // Calentamiento inicial
+        // CALENTAMIENTO AGRESIVO DE AUDIO
+        // Forzamos play/pause en todos para desbloquear el audio en el navegador
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const audioId = target.getAttribute('data-audio-id');
+          
           const videoEl = document.querySelector('#' + videoId);
           const audioEl = document.querySelector('#' + audioId);
           
-          if(videoEl) { videoEl.play(); videoEl.pause(); }
-          if(audioEl) { audioEl.play(); audioEl.pause(); }
+          if(videoEl) { 
+            videoEl.play().then(() => videoEl.pause()).catch(e => console.error(e));
+          }
+          if(audioEl) { 
+            // Seteamos volumen al máximo por seguridad
+            audioEl.volume = 1.0;
+            audioEl.play().then(() => audioEl.pause()).catch(e => console.error(e));
+          }
         });
       });
 
+      // LÓGICA DE DETECCIÓN
       arTargets.forEach(target => {
         const videoId = target.getAttribute('data-video-id');
         const audioId = target.getAttribute('data-audio-id');
+        
         const videoEl = document.querySelector('#' + videoId);
         const audioEl = document.querySelector('#' + audioId);
 
         target.addEventListener("targetFound", () => {
+          console.log(`Target encontrado: ${videoId}`);
+
+          // 1. VIDEO (Siempre arranca de 0)
           if (videoEl) {
             videoEl.currentTime = 0; 
             videoEl.play();
           }
+          
+          // 2. AUDIO (Lógica Blindada)
           if (audioEl) {
+             // Solo actuamos si el audio está en silencio/pausa
              if (audioEl.paused) {
-                 const duracionAudio = audioEl.duration;
-                 if (duracionAudio > 3) {
-                     const tiempoRandom = Math.random() * (duracionAudio - 3) + 3;
+                 
+                 // VERIFICACIÓN DE SEGURIDAD:
+                 // ¿Tenemos datos sobre la duración? (readyState >= 1 significa que cargó la metadata)
+                 // Y verificamos que la duración sea un número finito (isFinite)
+                 if (audioEl.readyState >= 1 && isFinite(audioEl.duration) && audioEl.duration > 3) {
+                     // Si todo está bien, calculamos el random
+                     const tiempoRandom = Math.random() * (audioEl.duration - 3) + 3;
                      audioEl.currentTime = tiempoRandom;
+                     console.log(`Audio ${audioId} inicia random en: ${tiempoRandom}`);
                  } else {
+                     // Si el audio aún no cargó datos, o falla algo, iniciamos desde 0
+                     // Esto garantiza que el audio SUENE sí o sí.
                      audioEl.currentTime = 0;
+                     console.log(`Audio ${audioId} inicia desde 0 (fallback)`);
                  }
-                 audioEl.play();
+
+                 // Disparar Play con manejo de errores
+                 var playPromise = audioEl.play();
+                 if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Error al reproducir audio automáticamente:", error);
+                    });
+                 }
              }
           }
         });
 
         target.addEventListener("targetLost", () => {
-          if (videoEl) videoEl.pause();
+          // Solo pausamos video. El audio sigue sonando (acumulativo).
+          if (videoEl) {
+            videoEl.pause();
+          }
         });
       });
     </script>
