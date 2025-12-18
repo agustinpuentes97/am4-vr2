@@ -6,7 +6,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* --- ESTILOS VISUALES --- */
+      /* ESTILOS (Igual que antes) */
       #overlay-container {
         position: fixed;
         top: 0;
@@ -26,7 +26,6 @@
         opacity: 0;
         transition: opacity 0.5s ease;
       }
-
       .instructions-text {
         font-size: 1.2rem;
         margin-bottom: 20px;
@@ -37,7 +36,6 @@
         color: #FFD700;
         font-weight: bold;
       }
-
       #start-button {
         padding: 15px 30px;
         background: #FFD700;
@@ -61,8 +59,8 @@
     
     <div id="overlay-container">
       <div class="instructions-text">
-        <p>🔊 <span class="highlight">SUBÍ EL VOLUMEN</span> al máximo.</p>
-        <p>Las imágenes activan capas de sonido.</p>
+        <p>🔊 <span class="highlight">SUBÍ EL VOLUMEN</span>.</p>
+        <p>Escaneá las imágenes para ver el contenido.</p>
       </div>
       <button id="start-button">Iniciar Experiencia AR</button>
     </div>
@@ -89,19 +87,19 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0" data-audio-id="aud0">
-        <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
+        <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="2.5 2.5 2.5"></a-video>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1" data-audio-id="aud1">
-        <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
+        <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="2.5 2.5 2.5"></a-video>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2" data-audio-id="aud2">
-        <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
+        <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="2.5 2.5 2.5"></a-video>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3" data-audio-id="aud3">
-        <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
+        <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="2.5 2.5 2.5"></a-video>
       </a-entity>
 
     </a-scene>
@@ -111,85 +109,79 @@
       const overlayContainer = document.querySelector('#overlay-container');
       const startBtn = document.querySelector('#start-button');
       const arTargets = document.querySelectorAll('.ar-target');
+      
+      // Colección de todos los audios para poder manipularlos en grupo
+      const allAudios = document.querySelectorAll('audio');
 
-      // Mostrar instrucciones al cargar
       sceneEl.addEventListener("loaded", () => {
         overlayContainer.style.visibility = "visible";
         overlayContainer.style.opacity = "1";
       });
 
-      // Botón de inicio mejorado
       startBtn.addEventListener("click", () => {
         sceneEl.systems["mindar-image-system"].start();
         overlayContainer.style.display = "none";
         
-        // CALENTAMIENTO SILENCIOSO
-        // Esto evita que suenen "constantemente" al inicio.
-        // Los reproducimos en Mute y los pausamos para que el navegador nos de permiso después.
+        // Calentamiento silencioso
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const audioId = target.getAttribute('data-audio-id');
-          
           const videoEl = document.querySelector('#' + videoId);
           const audioEl = document.querySelector('#' + audioId);
           
           if(videoEl) { 
-            videoEl.play().then(() => videoEl.pause()).catch(e => console.error(e));
+            videoEl.play().then(() => videoEl.pause()).catch(e => {});
           }
           if(audioEl) { 
-            audioEl.muted = true; // Silenciamos para el "click" inicial
+            audioEl.muted = true;
             audioEl.play().then(() => {
                 audioEl.pause();
                 audioEl.currentTime = 0;
-                audioEl.muted = false; // Devolvemos el volumen para cuando se escanee
-            }).catch(e => console.error(e));
+                audioEl.muted = false;
+            }).catch(e => {});
           }
         });
       });
 
-      // LÓGICA DE DETECCIÓN
       arTargets.forEach(target => {
         const videoId = target.getAttribute('data-video-id');
         const audioId = target.getAttribute('data-audio-id');
-        
         const videoEl = document.querySelector('#' + videoId);
         const audioEl = document.querySelector('#' + audioId);
 
         target.addEventListener("targetFound", () => {
           
-          // 1. VIDEO: Siempre arranca de 0
+          // 1. VIDEO: Play normal
           if (videoEl) {
             videoEl.currentTime = 0; 
             videoEl.play();
           }
           
-          // 2. AUDIO: Lógica de Capas + Inicio en Segundo 2
+          // 2. AUDIO: Lógica de "Solo uno a la vez"
           if (audioEl) {
-             // Solo si está pausado (es decir, es la PRIMERA VEZ o no está sonando)
-             if (audioEl.paused) {
-                 
-                 // FORZAMOS EL INICIO EN EL SEGUNDO 2
-                 audioEl.currentTime = 2; 
-                 console.log(`Activando capa de audio ${audioId} desde el segundo 2`);
-
-                 // Reproducir
-                 var playPromise = audioEl.play();
-                 if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Error al reproducir audio:", error);
-                    });
+             
+             // PASO A: Silenciar a TODOS los demás audios
+             allAudios.forEach(aud => {
+                 if (aud.id !== audioId) {
+                     aud.pause();
+                     aud.currentTime = 0; // Reiniciar los otros
                  }
-             } else {
-                 // Si ya NO está pausado (ya está sonando), no hacemos nada.
-                 // Dejamos que siga su curso como una "capa" de fondo.
-                 console.log(`El audio ${audioId} ya es una capa activa.`);
+             });
+
+             // PASO B: Reproducir el actual (si no estaba sonando ya)
+             // Nota: Quitamos la restricción de paused para asegurar que tome el control
+             audioEl.currentTime = 2; // Arrancar en segundo 2
+             
+             var playPromise = audioEl.play();
+             if (playPromise !== undefined) {
+                playPromise.catch(error => console.log("Error play:", error));
              }
           }
         });
 
         target.addEventListener("targetLost", () => {
-          // Solo pausamos el video.
-          // El audio NO se toca, queda sonando en loop.
+          // Solo pausamos video.
+          // El audio sigue sonando HASTA QUE encuentres otra imagen.
           if (videoEl) {
             videoEl.pause();
           }
