@@ -6,28 +6,71 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      #start-button {
+      /* --- NUEVOS ESTILOS --- */
+
+      /* 1. Contenedor de instrucciones (Capa oscura inicial) */
+      #overlay-container {
         position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 24px;
-        background: #333;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85); /* Fondo negro semi-transparente */
+        z-index: 9999; /* Asegura que esté por encima de todo */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         color: white;
-        border: none;
-        border-radius: 25px;
+        text-align: center;
         font-family: sans-serif;
+        /* Se mantiene oculto hasta que carga la escena */
+        visibility: hidden; 
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      /* Estilo del texto de instrucciones */
+      .instructions-text {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .highlight {
+        color: #FFD700; /* Color amarillo para resaltar palabras clave */
         font-weight: bold;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-        z-index: 1000;
+      }
+
+      /* 2. Nuevo estilo del Botón (Amarillo y Bold) */
+      #start-button {
+        padding: 15px 30px;
+        background: #FFD700; /* Amarillo llamativo */
+        color: black;       /* Letra negra */
+        border: none;
+        border-radius: 30px;
+        font-family: sans-serif;
+        font-weight: 900;   /* Bold extra fuerte */
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        box-shadow: 0px 4px 15px rgba(255, 215, 0, 0.5); /* Sombra amarilla */
         cursor: pointer;
-        display: none;
+        transition: transform 0.1s;
+      }
+      #start-button:active {
+        transform: scale(0.95);
       }
     </style>
   </head>
   <body>
     
-    <button id="start-button">Iniciar Experiencia AR</button>
+    <div id="overlay-container">
+      <div class="instructions-text">
+        <p>🔊 <span class="highlight">SUBÍ EL VOLUMEN</span> para disfrutar la experiencia.</p>
+        <p>👇 Apretá el botón para comenzar.</p>
+      </div>
+      <button id="start-button">Iniciar Experiencia AR</button>
+    </div>
+
 
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 4" 
@@ -53,15 +96,12 @@
       <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0" data-audio-id="aud0">
         <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
       </a-entity>
-
       <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1" data-audio-id="aud1">
         <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
       </a-entity>
-
       <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2" data-audio-id="aud2">
         <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
       </a-entity>
-
       <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3" data-audio-id="aud3">
         <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
       </a-entity>
@@ -70,18 +110,24 @@
 
     <script>
       const sceneEl = document.querySelector('a-scene');
+      // Referencia al nuevo contenedor principal
+      const overlayContainer = document.querySelector('#overlay-container');
       const startBtn = document.querySelector('#start-button');
       const arTargets = document.querySelectorAll('.ar-target');
 
       sceneEl.addEventListener("loaded", () => {
-        startBtn.style.display = "block";
+        // Cuando carga la escena, hacemos visible el contenedor de instrucciones
+        overlayContainer.style.visibility = "visible";
+        overlayContainer.style.opacity = "1";
       });
 
       startBtn.addEventListener("click", () => {
         sceneEl.systems["mindar-image-system"].start();
-        startBtn.style.display = "none";
         
-        // Calentamiento inicial (Necesario para iOS/Android)
+        // Al hacer click, ocultamos TODO el contenedor de instrucciones
+        overlayContainer.style.display = "none";
+        
+        // Calentamiento inicial
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const audioId = target.getAttribute('data-audio-id');
@@ -99,47 +145,27 @@
         const videoEl = document.querySelector('#' + videoId);
         const audioEl = document.querySelector('#' + audioId);
 
-        // --- AL ENCONTRAR LA IMAGEN ---
         target.addEventListener("targetFound", () => {
-          
-          // 1. VIDEO: Se reproduce siempre que se vea la imagen
           if (videoEl) {
-            videoEl.currentTime = 0; // Reinicia el video para que se vea desde el principio
+            videoEl.currentTime = 0; 
             videoEl.play();
           }
-          
-          // 2. AUDIO: Se "dispara" y queda libre
           if (audioEl) {
-             // VERIFICACIÓN CLAVE: ¿El audio está pausado?
-             // Si está pausado, significa que es la PRIMERA VEZ que lo vemos (o que no está sonando).
-             // Si NO está pausado, significa que ya lo activaste antes, así que NO HACEMOS NADA (dejamos que siga sonando).
              if (audioEl.paused) {
                  const duracionAudio = audioEl.duration;
-                 
-                 // Lógica Random (segundo 3 en adelante)
                  if (duracionAudio > 3) {
                      const tiempoRandom = Math.random() * (duracionAudio - 3) + 3;
                      audioEl.currentTime = tiempoRandom;
-                     console.log(`Activando audio ${audioId} en segundo: ${tiempoRandom.toFixed(2)}`);
                  } else {
                      audioEl.currentTime = 0;
                  }
-                 
                  audioEl.play();
              }
           }
         });
 
-        // --- AL PERDER LA IMAGEN ---
         target.addEventListener("targetLost", () => {
-          // SOLO pausamos el video, porque ya no se ve la imagen.
-          if (videoEl) {
-            videoEl.pause();
-          }
-          
-          // NOTA: No pausamos el audio (audioEl). 
-          // Al no poner 'audioEl.pause()', el sonido seguirá reproduciéndose eternamente 
-          // hasta que se cierre la página.
+          if (videoEl) videoEl.pause();
         });
       });
     </script>
