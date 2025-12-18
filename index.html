@@ -81,7 +81,7 @@
         sceneEl.systems["mindar-image-system"].start();
         startBtn.style.display = "none";
         
-        // Calentamiento inicial
+        // Calentamiento inicial: Play y Pause rápido a todo
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const audioId = target.getAttribute('data-audio-id');
@@ -100,33 +100,42 @@
         const audioEl = document.querySelector('#' + audioId);
 
         target.addEventListener("targetFound", () => {
-          // 1. VIDEO: Se reproduce TOTAL (desde el principio)
+          // 1. VIDEO: Siempre arranca de 0 al encontrar la imagen
           if (videoEl) {
-            videoEl.currentTime = 0; // Forzamos que arranque desde el inicio
+            videoEl.currentTime = 0; 
             videoEl.play();
           }
           
-          // 2. AUDIO: Se reproduce RANDOM (desde seg 3 en adelante)
+          // 2. AUDIO: Lógica acumulativa
           if (audioEl) {
-             const duracionAudio = audioEl.duration;
-             
-             // Solo calculamos random si el audio dura más de 3 segundos
-             if (duracionAudio > 3) {
-                 // Formula: Numero aleatorio entre 3 y el final
-                 const tiempoRandom = Math.random() * (duracionAudio - 3) + 3;
-                 audioEl.currentTime = tiempoRandom;
-                 console.log(`Audio random desde: ${tiempoRandom.toFixed(2)}`);
+             // IMPORTANTE: Solo iniciamos el audio si está en pausa.
+             // Si ya está sonando (porque lo activaste antes), lo dejamos seguir su curso.
+             if (audioEl.paused) {
+                 const duracionAudio = audioEl.duration;
+                 
+                 // Random start (segundo 3 en adelante)
+                 if (duracionAudio > 3) {
+                     const tiempoRandom = Math.random() * (duracionAudio - 3) + 3;
+                     audioEl.currentTime = tiempoRandom;
+                     console.log(`Sumando audio ${audioId} desde: ${tiempoRandom.toFixed(2)}`);
+                 } else {
+                     audioEl.currentTime = 0;
+                 }
+                 
+                 audioEl.play();
              } else {
-                 audioEl.currentTime = 0;
+                 console.log(`El audio ${audioId} ya estaba sonando, lo dejamos continuar.`);
              }
-             
-             audioEl.play();
           }
         });
 
         target.addEventListener("targetLost", () => {
+          // Al perder la imagen, SOLO pausamos el video.
+          // El audio NO se pausa.
           if (videoEl) videoEl.pause();
-          if (audioEl) audioEl.pause();
+          
+          // Nota cómo borré la línea de "audioEl.pause()". 
+          // Esto garantiza que el sonido siga acumulándose.
         });
       });
     </script>
