@@ -6,7 +6,6 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* --- ESTILOS VISUALES --- */
       #overlay-container {
         position: fixed;
         top: 0;
@@ -89,16 +88,19 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" class="ar-target" data-video-id="vid0" data-audio-id="aud0">
-        <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+        <a-video src="#vid0" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
       </a-entity>
+
       <a-entity mindar-image-target="targetIndex: 1" class="ar-target" data-video-id="vid1" data-audio-id="aud1">
-        <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+        <a-video src="#vid1" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
       </a-entity>
+
       <a-entity mindar-image-target="targetIndex: 2" class="ar-target" data-video-id="vid2" data-audio-id="aud2">
-        <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+        <a-video src="#vid2" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
       </a-entity>
+
       <a-entity mindar-image-target="targetIndex: 3" class="ar-target" data-video-id="vid3" data-audio-id="aud3">
-        <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0"></a-video>
+        <a-video src="#vid3" position="0 0 0" width="0.75" height="1" rotation="0 0 0" scale="1.5 1.5 1.5"></a-video>
       </a-entity>
 
     </a-scene>
@@ -109,19 +111,15 @@
       const startBtn = document.querySelector('#start-button');
       const arTargets = document.querySelectorAll('.ar-target');
 
-      // Mostrar instrucciones al cargar
       sceneEl.addEventListener("loaded", () => {
         overlayContainer.style.visibility = "visible";
         overlayContainer.style.opacity = "1";
       });
 
-      // Botón de inicio
       startBtn.addEventListener("click", () => {
         sceneEl.systems["mindar-image-system"].start();
         overlayContainer.style.display = "none";
         
-        // CALENTAMIENTO AGRESIVO DE AUDIO
-        // Forzamos play/pause en todos para desbloquear el audio en el navegador
         arTargets.forEach(target => {
           const videoId = target.getAttribute('data-video-id');
           const audioId = target.getAttribute('data-audio-id');
@@ -133,14 +131,12 @@
             videoEl.play().then(() => videoEl.pause()).catch(e => console.error(e));
           }
           if(audioEl) { 
-            // Seteamos volumen al máximo por seguridad
             audioEl.volume = 1.0;
             audioEl.play().then(() => audioEl.pause()).catch(e => console.error(e));
           }
         });
       });
 
-      // LÓGICA DE DETECCIÓN
       arTargets.forEach(target => {
         const videoId = target.getAttribute('data-video-id');
         const audioId = target.getAttribute('data-audio-id');
@@ -149,39 +145,24 @@
         const audioEl = document.querySelector('#' + audioId);
 
         target.addEventListener("targetFound", () => {
-          console.log(`Target encontrado: ${videoId}`);
-
-          // 1. VIDEO (Siempre arranca de 0)
           if (videoEl) {
             videoEl.currentTime = 0; 
             videoEl.play();
           }
           
-          // 2. AUDIO (Lógica Blindada)
           if (audioEl) {
-             // Solo actuamos si el audio está en silencio/pausa
              if (audioEl.paused) {
-                 
-                 // VERIFICACIÓN DE SEGURIDAD:
-                 // ¿Tenemos datos sobre la duración? (readyState >= 1 significa que cargó la metadata)
-                 // Y verificamos que la duración sea un número finito (isFinite)
                  if (audioEl.readyState >= 1 && isFinite(audioEl.duration) && audioEl.duration > 3) {
-                     // Si todo está bien, calculamos el random
                      const tiempoRandom = Math.random() * (audioEl.duration - 3) + 3;
                      audioEl.currentTime = tiempoRandom;
-                     console.log(`Audio ${audioId} inicia random en: ${tiempoRandom}`);
                  } else {
-                     // Si el audio aún no cargó datos, o falla algo, iniciamos desde 0
-                     // Esto garantiza que el audio SUENE sí o sí.
                      audioEl.currentTime = 0;
-                     console.log(`Audio ${audioId} inicia desde 0 (fallback)`);
                  }
 
-                 // Disparar Play con manejo de errores
                  var playPromise = audioEl.play();
                  if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.log("Error al reproducir audio automáticamente:", error);
+                        console.log("Error auto-play audio:", error);
                     });
                  }
              }
@@ -189,7 +170,6 @@
         });
 
         target.addEventListener("targetLost", () => {
-          // Solo pausamos video. El audio sigue sonando (acumulativo).
           if (videoEl) {
             videoEl.pause();
           }
